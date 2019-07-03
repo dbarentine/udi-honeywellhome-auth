@@ -29,6 +29,6 @@ namespace Barentine.Udi.HoneywellHome.Models
     public class AuthResponse
     {
         public string UserId { get; set; }
-        public string LocationsJson { get; set; }
+        public string Locations { get; set; }
     }
 }

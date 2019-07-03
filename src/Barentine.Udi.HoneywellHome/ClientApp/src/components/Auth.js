@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-// import {LocalStorageComponent} from "../SessionStorageComponent";
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 const queryString = require('query-string');
 
 export class Auth extends Component {
@@ -7,11 +8,10 @@ export class Auth extends Component {
 
     constructor (props) {
         super(props);
-        this.state = {clientId: '', clientSecret: '', userId: '', locationsJson: ''};
+        this.state = {clientId: '', clientSecret: '', locations: ''};
     }
 
     componentDidMount() {
-        //super.componentDidMount();
         const parsed = queryString.parse(this.props.location.search);
         const clientId = this.getSessionStorageProperty("clientId");
         const clientSecret = this.getSessionStorageProperty("clientSecret");
@@ -29,7 +29,7 @@ export class Auth extends Component {
             body: JSON.stringify({ code: parsed.code, client_id: clientId, client_secret: clientSecret })
         }).then( response => response.json())
             .then( data => {
-                this.setState({ userId: data.userId, locationsJson: data.locationsJson });
+                this.setState({ locations: data });
             })
             .catch( error => {
                 console.log(error);
@@ -51,9 +51,10 @@ export class Auth extends Component {
     render () {
         return (
             <div>
-                <h1>Counter</h1>
-
-                <p>This is a simple example of a React component.</p>
+                <h1>Response</h1>
+                <SyntaxHighlighter language="json" style={docco}>
+                    {JSON.stringify(this.state.locations, undefined, 2)}
+                </SyntaxHighlighter>
             </div>
         );
     }

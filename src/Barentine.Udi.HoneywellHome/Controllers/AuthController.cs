@@ -31,10 +31,13 @@ namespace Barentine.Udi.HoneywellHome.Controllers
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Threading.Tasks;
     using Barentine.Udi.HoneywellHome.Models;
     using IdentityModel.Client;
     using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [Route("api/[controller]")]
     public class AuthController : Controller
@@ -61,41 +64,34 @@ namespace Barentine.Udi.HoneywellHome.Controllers
 
             try
             {
-                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://connectedhome-sandbox.apigee.net/oauth2/token");
-
-                IDictionary<string, string> content = new Dictionary<string, string>();
-                content.Add("code", request.Code);
-                content.Add("grant_type", "authorization_code");
-                content.Add("redirect_uri", $"{Request.Scheme}://{Request.Host}");
-                requestMessage.Content = new FormUrlEncodedContent(content);
-
-                requestMessage.SetBasicAuthentication(request.ClientId, request.ClientSecret);
-
-                HttpResponseMessage response = await httpClient.SendAsync(requestMessage);
-                /*TokenResponse token = await httpClient.RequestAuthorizationCodeTokenAsync(
+                TokenResponse token = await httpClient.RequestAuthorizationCodeTokenAsync(
                     new AuthorizationCodeTokenRequest
                     {
                         Address = "https://connectedhome-sandbox.apigee.net/oauth2/token",
                         ClientId = request.ClientId,
                         ClientSecret = request.ClientSecret,
                         Code = request.Code,
-                        RedirectUri = $"{Request.Scheme}://{Request.Host}",
+                        RedirectUri = $"{Request.Scheme}://{Request.Host}/auth",
                         ClientCredentialStyle = ClientCredentialStyle.AuthorizationHeader,
-                    });*/
+                    });
 
-                //token.AccessToken
-                return new OkObjectResult(new AuthResponse
-                {
-                    UserId = "3293923",
-                    LocationsJson = "{}",
-                });
+                JArray locations = await GetLocations(token.AccessToken, request.ClientId);
+                return new OkObjectResult(locations);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error calling Honeywell API");
                 return new StatusCodeResult(500);
             }
-            
+        }
+
+        private async Task<JArray> GetLocations(string accessToken, string clientId)
+        {
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, $"https://connectedhome-sandbox.apigee.net/v2/locations?apikey={clientId}");
+            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            HttpResponseMessage response = await httpClient.SendAsync(requestMessage);
+            return JsonConvert.DeserializeObject<JArray>(await response.Content.ReadAsStringAsync());
         }
     }
 }

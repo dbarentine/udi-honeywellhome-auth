@@ -6,10 +6,27 @@ export class Home extends LocalStorageComponent {
 
   constructor(props) {
       super(props);
-      this.state = {clientId: '', clientSecret: ''};
+      this.state = {clientId: '', clientSecret: '', apiBaseUrl: ''};
 
       this.handleChange = this.handleChange.bind(this);
       this.authorize = this.authorize.bind(this);
+  }
+
+  componentDidMount() {
+      super.componentDidMount();
+      
+      fetch('api/metadata/config', {
+          method: 'get',
+          headers: {
+              'Accept': 'application/json'
+          }
+      }).then( response => response.json())
+          .then( data => {
+              this.setState({ apiBaseUrl: data.apiBaseUri });
+          })
+          .catch( error => {
+              console.log(error);
+          });
   }
 
   handleChange(event) {
@@ -20,7 +37,7 @@ export class Home extends LocalStorageComponent {
 
   authorize(event) {
       event.preventDefault();
-      window.location = "https://connectedhome-sandbox.apigee.net/oauth2/authorize?response_type=code&client_id="
+      window.location = this.state.apiBaseUrl + "/oauth2/authorize?response_type=code&client_id="
           + this.state.clientId + "&redirect_uri=" + document.location.origin + "/auth";
   }
   

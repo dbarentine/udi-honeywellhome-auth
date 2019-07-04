@@ -30,29 +30,35 @@ namespace Barentine.Udi.HoneywellHome.Controllers
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
     using Barentine.Udi.HoneywellHome.Models;
+    using Flurl;
     using IdentityModel.Client;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [Route("api/[controller]")]
-    public class AuthController : Controller
+    public class MetadataController : Controller
     {
+        private readonly Uri apiBaseUri;
         private readonly HttpClient httpClient;
-        private readonly ILogger<AuthController> logger;
+        private readonly ILogger<MetadataController> logger;
 
-        public AuthController(IHttpClientFactory httpClientFactory, ILogger<AuthController> logger)
+        public MetadataController(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<MetadataController> logger)
         {
+            this.apiBaseUri = new Uri(configuration["HoneywellApiBaseUri"]);
             this.httpClient = httpClientFactory.CreateClient(); 
             this.logger = logger;
         }
         
         [HttpPost]
-        public async Task<IActionResult> GetUser([FromBody] CodeExchangeRequest request)
+        [Route("users")]
+        public async Task<IActionResult> GetUsers([FromBody] CodeExchangeRequest request)
         {
             if (request == null ||
                 string.IsNullOrEmpty(request.Code) ||
@@ -64,10 +70,12 @@ namespace Barentine.Udi.HoneywellHome.Controllers
 
             try
             {
+                Url url = new Url(apiBaseUri).AppendPathSegment("oauth2/token");
+                
                 TokenResponse token = await httpClient.RequestAuthorizationCodeTokenAsync(
                     new AuthorizationCodeTokenRequest
                     {
-                        Address = "https://connectedhome-sandbox.apigee.net/oauth2/token",
+                        Address = url.ToString(),
                         ClientId = request.ClientId,
                         ClientSecret = request.ClientSecret,
                         Code = request.Code,
@@ -76,7 +84,13 @@ namespace Barentine.Udi.HoneywellHome.Controllers
                     });
 
                 JArray locations = await GetLocations(token.AccessToken, request.ClientId);
-                return new OkObjectResult(locations);
+                List<User> users = GetUsers(locations);
+
+                return new OkObjectResult(new UsersResponse
+                {
+                    Users = users,
+                    Locations = locations,
+                });
             }
             catch (Exception ex)
             {
@@ -85,9 +99,53 @@ namespace Barentine.Udi.HoneywellHome.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("config")]
+        public IActionResult GetConfig()
+        {
+            return new OkObjectResult(new
+            {
+                ApiBaseUri = apiBaseUri.AbsoluteUri,
+            });
+        }
+
+        private List<User> GetUsers(JArray locations)
+        {
+            IDictionary<string, User> users = new Dictionary<string, User>();
+
+            foreach (JToken location in locations)
+            {
+                JArray usrs = location["users"] as JArray;
+
+                if (usrs == null)
+                {
+                    continue;
+                }
+                
+                foreach (JToken user in usrs)
+                {
+                    string userId = user["userID"].Value<string>();
+
+                    if (!users.ContainsKey(userId))
+                    {
+                        users.Add(userId, new User
+                        {
+                            UserId = userId,
+                            Username = user["username"].Value<string>(),
+                            FirstName = user["firstname"].Value<string>(),
+                            LastName = user["lastname"].Value<string>(),
+                        });
+                    }
+                }
+            }
+            
+            return users.Values.ToList();
+        }
+        
         private async Task<JArray> GetLocations(string accessToken, string clientId)
         {
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, $"https://connectedhome-sandbox.apigee.net/v2/locations?apikey={clientId}");
+            Url url = new Url(apiBaseUri).AppendPathSegment("v2/locations").SetQueryParam("apikey", clientId);
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url.ToString());
             requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             HttpResponseMessage response = await httpClient.SendAsync(requestMessage);

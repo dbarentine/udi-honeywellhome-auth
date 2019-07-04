@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------------------------------------------------
-// <copyright file="AuthResponse.cs" company="One Identity Inc.">
+// <copyright file="User.cs" company="One Identity Inc.">
 //   ONE IDENTITY LLC. PROPRIETARY INFORMATION
 // 
 //   This software is confidential.  One Identity, LLC. or one of its affiliates or
@@ -26,9 +26,11 @@
 
 namespace Barentine.Udi.HoneywellHome.Models
 {
-    public class AuthResponse
+    public class User
     {
         public string UserId { get; set; }
-        public string Locations { get; set; }
+        public string Username { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
     }
 }

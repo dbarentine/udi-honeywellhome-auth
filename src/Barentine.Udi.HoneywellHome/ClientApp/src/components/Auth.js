@@ -8,7 +8,7 @@ export class Auth extends Component {
 
     constructor (props) {
         super(props);
-        this.state = {clientId: '', clientSecret: '', locations: ''};
+        this.state = {clientId: '', clientSecret: '', locations: '', users: ''};
     }
 
     componentDidMount() {
@@ -20,7 +20,7 @@ export class Auth extends Component {
             return;
         }
 
-        fetch('api/auth', {
+        fetch('api/metadata/users', {
             method: 'post',
             headers: {
                 'Accept': 'application/json',
@@ -29,7 +29,7 @@ export class Auth extends Component {
             body: JSON.stringify({ code: parsed.code, client_id: clientId, client_secret: clientSecret })
         }).then( response => response.json())
             .then( data => {
-                this.setState({ locations: data });
+                this.setState({ locations: data.locations, users: data.users });
             })
             .catch( error => {
                 console.log(error);
@@ -52,6 +52,7 @@ export class Auth extends Component {
         return (
             <div>
                 <h1>Response</h1>
+                <br />
                 <SyntaxHighlighter language="json" style={docco}>
                     {JSON.stringify(this.state.locations, undefined, 2)}
                 </SyntaxHighlighter>

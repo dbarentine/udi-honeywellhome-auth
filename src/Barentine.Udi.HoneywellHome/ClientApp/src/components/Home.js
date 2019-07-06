@@ -49,13 +49,13 @@ export class Home extends LocalStorageComponent {
                   <legend>Honeywell Home API Authorization</legend>
                   <div className="pure-control-group">
                       <label id='clientIdLabel' htmlFor='clientIdField'>Client ID</label>
-                      <input id='clientIdField' name='clientId' type='text' value={this.state.clientId} onChange={this.handleChange}/>
+                      <input id='clientIdField' name='clientId' type='text' required='true' value={this.state.clientId} onChange={this.handleChange}/>
                       <span className="pure-form-message-inline">This is a required field.</span>
                   </div>
 
                   <div className="pure-control-group">
                       <label id='clientSecretLabel' htmlFor='clientSecretField'>Client Secret</label>
-                      <input id='clientSecretField' name='clientSecret' type='password' value={this.state.clientSecret} onChange={this.handleChange}/>
+                      <input id='clientSecretField' name='clientSecret' type='password' required='true' value={this.state.clientSecret} onChange={this.handleChange}/>
                       <span className="pure-form-message-inline">This is a required field.</span>
                   </div>
 

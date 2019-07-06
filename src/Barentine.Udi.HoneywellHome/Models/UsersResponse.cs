@@ -33,5 +33,7 @@ namespace Barentine.Udi.HoneywellHome.Models
     {
         public List<User> Users { get; set; }
         public JArray Locations { get; set; }
+        
+        public string ErrorMessage { get; set; }
     }
 }

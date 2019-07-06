@@ -83,6 +83,11 @@ namespace Barentine.Udi.HoneywellHome.Controllers
                         ClientCredentialStyle = ClientCredentialStyle.AuthorizationHeader,
                     });
 
+                if (token.IsError)
+                {
+                    throw new Exception($"Failed to exchange code for a token. Status Code: {token.HttpStatusCode}, Error: {token.Error}");
+                }
+                
                 JArray locations = await GetLocations(token.AccessToken, request.ClientId);
                 List<User> users = GetUsers(locations);
 
@@ -95,7 +100,12 @@ namespace Barentine.Udi.HoneywellHome.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error calling Honeywell API");
-                return new StatusCodeResult(500);
+                
+                ObjectResult error = new ObjectResult(new UsersResponse {ErrorMessage = ex.Message})
+                {
+                    StatusCode = 500,
+                };
+                return error;
             }
         }
 

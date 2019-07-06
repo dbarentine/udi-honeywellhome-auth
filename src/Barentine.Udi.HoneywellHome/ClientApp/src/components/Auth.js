@@ -1,6 +1,14 @@
 import React, { Component } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import {
+    DataTable,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableColumn,
+} from 'react-md';
+
 const queryString = require('query-string');
 
 export class Auth extends Component {
@@ -8,7 +16,7 @@ export class Auth extends Component {
 
     constructor (props) {
         super(props);
-        this.state = {clientId: '', clientSecret: '', locations: '', users: ''};
+        this.state = {clientId: '', clientSecret: '', locations: '', users: '', error: ''};
     }
 
     componentDidMount() {
@@ -29,7 +37,7 @@ export class Auth extends Component {
             body: JSON.stringify({ code: parsed.code, client_id: clientId, client_secret: clientSecret })
         }).then( response => response.json())
             .then( data => {
-                this.setState({ locations: data.locations, users: data.users });
+                this.setState({ locations: data.locations, users: data.users, error: data.errorMessage });
             })
             .catch( error => {
                 console.log(error);
@@ -52,6 +60,8 @@ export class Auth extends Component {
         return (
             <div>
                 <h1>Response</h1>
+                <ErrorMessage error={this.state.error} />
+                <UserTable users={this.state.users} />
                 <br />
                 <SyntaxHighlighter language="json" style={docco}>
                     {JSON.stringify(this.state.locations, undefined, 2)}
@@ -60,3 +70,46 @@ export class Auth extends Component {
         );
     }
 }
+
+const ErrorMessage = ({ error }) => {
+    if(!error) {
+        return (
+            <div />
+        );
+    }
+    
+    return (
+        <p style={{color: 'red'}}>{error}</p>
+    );
+};
+
+const UserTable = ({ users }) => {
+    if(!users) {
+        return (
+            <div id="users" />
+        );
+    }
+
+    return (
+        <DataTable plain>
+            <TableHeader>
+                <TableRow>
+                    <TableColumn>User ID</TableColumn>
+                    <TableColumn>Username</TableColumn>
+                    <TableColumn>First Name</TableColumn>
+                    <TableColumn>Last Name</TableColumn>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {users.map((_, i) => (
+                    <TableRow key={_.userId}>
+                        <TableColumn>{_.userId}</TableColumn>
+                        <TableColumn>{_.username}</TableColumn>
+                        <TableColumn>{_.firstName}</TableColumn>
+                        <TableColumn>{_.lastName}</TableColumn>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </DataTable>
+    );
+};
